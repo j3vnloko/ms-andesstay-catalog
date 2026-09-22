@@ -1,9 +1,12 @@
 package cl.duoc.andesstay.catalog.config;
 
 import cl.duoc.andesstay.catalog.security.CognitoJwtAuthenticationConverter;
+import cl.duoc.andesstay.catalog.security.RestAccessDeniedHandler;
+import cl.duoc.andesstay.catalog.security.RestAuthenticationEntryPoint;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -19,25 +22,34 @@ import java.util.List;
 /**
  * Seguridad del microservicio de catalogo.
  *
- * A diferencia de una version anterior de este mismo patron usada en el BFF,
- * aqui el .oauth2ResourceServer(...) SI queda conectado al filterChain, y
- * las reglas de autorizacion por rol SI se aplican (no anyRequest().permitAll()).
+ * Esta configuracion SOLO se activa cuando el perfil "nosec" NO esta activo,
+ * es decir, es la seguridad real con Cognito. Para probar localmente sin
+ * tener el User Pool creado todavia, correr con
+ * -Dspring-boot.run.profiles=nosec
+ * (ver SecurityConfigNoAuth, la version de reemplazo para ese perfil).
  *
- *   GET (lectura)               -> cualquier usuario autenticado (ADMIN o USER)
- *   POST/PUT/DELETE (escritura) -> solo ADMIN
+ * GET (lectura) -> cualquier usuario autenticado (ADMIN o USER)
+ * POST/PUT/DELETE (escritura) -> solo ADMIN
  */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@Profile("!nosec")
 public class SecurityConfig {
 
     @Value("${cors.allowed-origins}")
     private String allowedOrigins;
 
     private final CognitoJwtAuthenticationConverter cognitoJwtAuthenticationConverter;
+    private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
+    private final RestAccessDeniedHandler restAccessDeniedHandler;
 
-    public SecurityConfig(CognitoJwtAuthenticationConverter cognitoJwtAuthenticationConverter) {
+    public SecurityConfig(CognitoJwtAuthenticationConverter cognitoJwtAuthenticationConverter,
+            RestAuthenticationEntryPoint restAuthenticationEntryPoint,
+            RestAccessDeniedHandler restAccessDeniedHandler) {
         this.cognitoJwtAuthenticationConverter = cognitoJwtAuthenticationConverter;
+        this.restAuthenticationEntryPoint = restAuthenticationEntryPoint;
+        this.restAccessDeniedHandler = restAccessDeniedHandler;
     }
 
     @Bean
@@ -55,7 +67,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/catalog/units/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt.jwtAuthenticationConverter(cognitoJwtAuthenticationConverter)));
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(cognitoJwtAuthenticationConverter)))
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(restAuthenticationEntryPoint)
+                        .accessDeniedHandler(restAccessDeniedHandler));
 
         return http.build();
     }
