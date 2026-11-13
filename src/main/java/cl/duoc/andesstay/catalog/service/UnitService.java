@@ -1,11 +1,14 @@
 package cl.duoc.andesstay.catalog.service;
 
 import cl.duoc.andesstay.catalog.dto.UnitRequest;
+import cl.duoc.andesstay.catalog.dto.UnitResponse;
 import cl.duoc.andesstay.catalog.model.Unit;
 import cl.duoc.andesstay.catalog.repository.UnitRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class UnitService {
@@ -16,16 +19,23 @@ public class UnitService {
         this.unitRepository = unitRepository;
     }
 
-    public List<Unit> findAll() {
-        return unitRepository.findAll();
+    @Transactional(readOnly = true)
+    public List<UnitResponse> findAll() {
+        return unitRepository.findAll()
+                .stream()
+                .map(UnitResponse::fromEntity)
+                .collect(Collectors.toList());
     }
 
-    public Unit findById(Long id) {
-        return unitRepository.findById(id)
+    @Transactional(readOnly = true)
+    public UnitResponse findById(Long id) {
+        Unit unit = unitRepository.findById(id)
                 .orElseThrow(() -> new UnitNotFoundException(id));
+        return UnitResponse.fromEntity(unit);
     }
 
-    public Unit create(UnitRequest request) {
+    @Transactional
+    public UnitResponse create(UnitRequest request) {
         Unit unit = new Unit(
                 request.getName(),
                 request.getType(),
@@ -33,11 +43,14 @@ public class UnitService {
                 request.getPricePerNight(),
                 request.getAvailable() != null ? request.getAvailable() : true
         );
-        return unitRepository.save(unit);
+        Unit saved = unitRepository.save(unit);
+        return UnitResponse.fromEntity(saved);
     }
 
-    public Unit update(Long id, UnitRequest request) {
-        Unit existing = findById(id);
+    @Transactional
+    public UnitResponse update(Long id, UnitRequest request) {
+        Unit existing = unitRepository.findById(id)
+                .orElseThrow(() -> new UnitNotFoundException(id));
         existing.setName(request.getName());
         existing.setType(request.getType());
         existing.setCapacity(request.getCapacity());
@@ -45,11 +58,14 @@ public class UnitService {
         if (request.getAvailable() != null) {
             existing.setAvailable(request.getAvailable());
         }
-        return unitRepository.save(existing);
+        Unit saved = unitRepository.save(existing);
+        return UnitResponse.fromEntity(saved);
     }
 
+    @Transactional
     public void delete(Long id) {
-        Unit existing = findById(id);
+        Unit existing = unitRepository.findById(id)
+                .orElseThrow(() -> new UnitNotFoundException(id));
         unitRepository.delete(existing);
     }
 }

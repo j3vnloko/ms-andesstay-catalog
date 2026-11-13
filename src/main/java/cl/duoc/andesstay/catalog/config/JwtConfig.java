@@ -1,10 +1,10 @@
 package cl.duoc.andesstay.catalog.config;
 
 import cl.duoc.andesstay.catalog.security.CognitoAudienceValidator;
+import cl.duoc.andesstay.catalog.security.CognitoTokenUseValidator;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -14,28 +14,15 @@ import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 
 /**
- * Construye el JwtDecoder del microservicio de catalogo, validando tokens
- * emitidos por un User Pool de AWS Cognito.
+ * Construye el JwtDecoder validando tokens emitidos por un User Pool de AWS Cognito.
  *
- * IMPORTANTE - Cognito tiene dos tipos de token distintos:
- * - ID token: trae el claim "aud" (el App Client ID), pensado para
- * identificar al usuario en el propio frontend.
- * - Access token: NO trae "aud". En su lugar trae el claim "client_id".
- * Es el que se debe usar como Bearer token para llamar a APIs.
- *
- * Como el frontend debe mandar el ACCESS TOKEN en el header Authorization,
- * este validador revisa "client_id" en vez de "aud" (a diferencia del
- * AudienceValidator que se usaba con Azure AD).
- *
- * issuer-uri esperado (ver application.properties):
- * https://cognito-idp.{region}.amazonaws.com/{userPoolId}
- * Spring resuelve automaticamente el JWKS en:
- * {issuer-uri}/.well-known/jwks.json
+ * Validaciones encadenadas en DelegatingOAuth2TokenValidator:
+ *   1. Issuer (automatico con JwtValidators.createDefaultWithIssuer)
+ *   2. client_id == nuestro App Client ID (CognitoAudienceValidator)
+ *   3. token_use == "access" (CognitoTokenUseValidator)
+ *   4. Firma (JWKS) y vigencia (exp) son validadas por Nimbus automaticamente.
  */
-// Sin esto, con el perfil "nosec" Spring intentaria igual conectarse a
-// Cognito (con el issuer-uri en CHANGE_ME) al arrancar y fallaria.
 @Configuration
-@Profile("!nosec")
 public class JwtConfig {
 
     @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}")
@@ -50,7 +37,10 @@ public class JwtConfig {
 
         OAuth2TokenValidator<Jwt> withIssuer = JwtValidators.createDefaultWithIssuer(issuerUri);
         OAuth2TokenValidator<Jwt> withClientId = new CognitoAudienceValidator(expectedClientId);
-        OAuth2TokenValidator<Jwt> combinedValidator = new DelegatingOAuth2TokenValidator<>(withIssuer, withClientId);
+        OAuth2TokenValidator<Jwt> withTokenUse = new CognitoTokenUseValidator();
+
+        OAuth2TokenValidator<Jwt> combinedValidator =
+                new DelegatingOAuth2TokenValidator<>(withIssuer, withClientId, withTokenUse);
 
         jwtDecoder.setJwtValidator(combinedValidator);
         return jwtDecoder;

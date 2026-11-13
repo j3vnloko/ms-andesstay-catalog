@@ -14,12 +14,8 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * Cognito entrega los grupos del usuario (donde se manejan los roles,
- * p.ej. "ADMIN") en el claim "cognito:groups" del token, a diferencia de
- * Azure AD que usaba "roles".
- *
- * Ejemplo de claim en el token:
- *   "cognito:groups": ["ADMIN"]  ->  authority "ROLE_ADMIN"
+ * Cognito entrega los grupos del usuario en el claim "cognito:groups".
+ * Ejemplo: "cognito:groups": ["ADMIN"] -> authority "ROLE_ADMIN"
  */
 @Component
 public class CognitoJwtAuthenticationConverter implements Converter<Jwt, AbstractAuthenticationToken> {

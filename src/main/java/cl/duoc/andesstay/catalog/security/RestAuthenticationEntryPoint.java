@@ -12,9 +12,8 @@ import java.io.IOException;
 import java.util.Map;
 
 /**
- * Devuelve 401 en JSON homogeneo cuando el request llega sin token o con un
- * token invalido/expirado. Sin esto, Spring devuelve una pagina HTML de error
- * que no sirve para una API REST.
+ * Devuelve 401 en JSON cuando el request llega sin token o con un
+ * token invalido/expirado.
  */
 @Component
 public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {

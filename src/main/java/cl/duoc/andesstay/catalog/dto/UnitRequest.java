@@ -1,22 +1,26 @@
 package cl.duoc.andesstay.catalog.dto;
 
+import cl.duoc.andesstay.catalog.model.UnitType;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
 import java.math.BigDecimal;
 
 public class UnitRequest {
 
-    @NotBlank
+    @NotBlank(message = "El nombre es obligatorio")
     private String name;
 
-    @NotBlank
-    private String type;
+    @NotNull(message = "El tipo es obligatorio (HABITACION, CABANA, LODGE)")
+    private UnitType type;
 
-    @Positive
+    @NotNull(message = "La capacidad es obligatoria")
+    @Positive(message = "La capacidad debe ser mayor a 0")
     private Integer capacity;
 
-    @Positive
+    @NotNull(message = "El precio por noche es obligatorio")
+    @Positive(message = "El precio por noche debe ser mayor a 0")
     private BigDecimal pricePerNight;
 
     private Boolean available;
@@ -29,11 +33,11 @@ public class UnitRequest {
         this.name = name;
     }
 
-    public String getType() {
+    public UnitType getType() {
         return type;
     }
 
-    public void setType(String type) {
+    public void setType(UnitType type) {
         this.type = type;
     }
 

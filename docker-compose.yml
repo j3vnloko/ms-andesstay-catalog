@@ -1,0 +1,55 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: andesstay-catalog-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: andesstay_catalog
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./src/main/resources/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./src/main/resources/data.sql:/docker-entrypoint-initdb.d/02-data.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d andesstay_catalog"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - andesstay-network
+
+  catalog-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ms-andesstay-catalog
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/andesstay_catalog
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      COGNITO_REGION: ${COGNITO_REGION:-us-east-1}
+      COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID:-CHANGE_ME}
+      COGNITO_APP_CLIENT_ID: ${COGNITO_APP_CLIENT_ID:-CHANGE_ME}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4200}
+      CORS_ENABLED: ${CORS_ENABLED:-true}
+    networks:
+      - andesstay-network
+
+volumes:
+  postgres_data:
+    name: andesstay_catalog_pgdata
+
+networks:
+  andesstay-network:
+    name: andesstay-net
+    driver: bridge
+
