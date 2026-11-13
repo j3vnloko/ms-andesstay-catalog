@@ -12,8 +12,8 @@ import java.io.IOException;
 import java.util.Map;
 
 /**
- * Devuelve 403 en JSON homogeneo cuando el usuario esta autenticado pero no
- * tiene el rol requerido (p.ej. un HUESPED intenta hacer POST/PUT/DELETE).
+ * Devuelve 403 en JSON cuando el usuario esta autenticado pero no
+ * tiene el rol requerido.
  */
 @Component
 public class RestAccessDeniedHandler implements AccessDeniedHandler {

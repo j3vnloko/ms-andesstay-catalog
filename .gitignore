@@ -28,4 +28,11 @@ bin/
 
 ### Variables de entorno / credenciales locales ###
 .env
-application-local.properties
+.env.*
+!.env.example
+
+### Archivos que no deben subirse ###
+*.log
+*.jar
+application-local*.properties
+application-secret*.properties

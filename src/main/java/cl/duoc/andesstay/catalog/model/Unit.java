@@ -1,9 +1,6 @@
 package cl.duoc.andesstay.catalog.model;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Positive;
-
 import java.math.BigDecimal;
 
 @Entity
@@ -14,20 +11,16 @@ public class Unit {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank
     @Column(nullable = false)
     private String name;
 
-    // HABITACION, CABANA, LODGE
-    @NotBlank
-    @Column(nullable = false)
-    private String type;
+    @Column(nullable = false, length = 50)
+    @Enumerated(EnumType.STRING)
+    private UnitType type;
 
-    @Positive
     @Column(nullable = false)
     private Integer capacity;
 
-    @Positive
     @Column(name = "price_per_night", nullable = false)
     private BigDecimal pricePerNight;
 
@@ -37,7 +30,7 @@ public class Unit {
     public Unit() {
     }
 
-    public Unit(String name, String type, Integer capacity, BigDecimal pricePerNight, Boolean available) {
+    public Unit(String name, UnitType type, Integer capacity, BigDecimal pricePerNight, Boolean available) {
         this.name = name;
         this.type = type;
         this.capacity = capacity;
@@ -61,11 +54,11 @@ public class Unit {
         this.name = name;
     }
 
-    public String getType() {
+    public UnitType getType() {
         return type;
     }
 
-    public void setType(String type) {
+    public void setType(UnitType type) {
         this.type = type;
     }
 

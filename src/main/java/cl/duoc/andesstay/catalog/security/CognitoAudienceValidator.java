@@ -8,7 +8,6 @@ import org.springframework.security.oauth2.jwt.Jwt;
 /**
  * Los access tokens de Cognito no traen el claim estandar "aud"; en su
  * lugar traen "client_id" con el App Client ID que emitio el token.
- * Este validador reemplaza al AudienceValidator que se usaria con Azure AD.
  */
 public class CognitoAudienceValidator implements OAuth2TokenValidator<Jwt> {
 
