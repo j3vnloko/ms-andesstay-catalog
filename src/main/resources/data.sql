@@ -21,3 +21,5 @@ INSERT INTO units (id, name, type, capacity, price_per_night, available)
 VALUES (5, 'Cabana Bosque Sur', 'CABANA', 4, 72000.00, true)
 ON CONFLICT (id) DO NOTHING;
 
+-- Ajusta el contador de IDs despues de insertar IDs fijos, para que las nuevas unidades no choquen
+SELECT setval(pg_get_serial_sequence('units', 'id'), (SELECT COALESCE(MAX(id), 1) FROM units));
